@@ -11,7 +11,7 @@ class AuthController extends Controller
     // Tampilkan form login
     public function showLoginForm()
     {
-        return Inertia::render('auth/login', [
+        return Inertia::render('auth/Login', [
             'canResetPassword' => false,
             'canRegister' => false,
         ]);
