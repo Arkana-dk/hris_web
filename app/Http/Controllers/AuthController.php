@@ -20,40 +20,45 @@ class AuthController extends Controller
     // Proses login
     public function login(Request $request)
     {
-      $credentials =  $request->validate([
+        $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             $user = Auth::user();
 
-            // Redirect based on Spatie roles
-            if ($user->hasRole('super-admin')) {
-                return redirect()->route('admin.dashboard'); // Super admin ke admin dashboard
-            }
-            if ($user->hasRole(['payroll-admin', 'hr-admin', 'system-admin'])) {
-                return redirect()->route('admin.dashboard');
-            }
-            if ($user->hasRole('payroll-staff')) {
-                return redirect()->route('admin.dashboard'); // Staff juga ke admin dashboard
-            }
-            if ($user->hasRole('hr-staff')) {
-                return redirect()->route('admin.dashboard');
-            }
-            if ($user->hasRole('employee')) {
-                return redirect()->route('employee.dashboard');
-            }
+            // Determine redirect URL based on Spatie roles
+            $redirectUrl = null;
             
-            // Default redirect untuk user tanpa role
-            return redirect()->route('employee.dashboard');
+            if ($user->hasRole('super-admin')) {
+                $redirectUrl = route('admin.dashboard');
+            } elseif ($user->hasRole(['payroll-admin', 'hr-admin', 'system-admin'])) {
+                $redirectUrl = route('admin.dashboard');
+            } elseif ($user->hasRole('payroll-staff')) {
+                $redirectUrl = route('admin.dashboard');
+            } elseif ($user->hasRole('hr-staff')) {
+                $redirectUrl = route('admin.dashboard');
+            } elseif ($user->hasRole('employee')) {
+                $redirectUrl = route('employee.dashboard');
+            } else {
+                // Default redirect untuk user tanpa role
+                $redirectUrl = route('employee.dashboard');
+            }
+
+            // For Inertia requests, use Inertia::location for a full page visit
+            if ($request->wantsJson() || $request->header('X-Inertia')) {
+                return Inertia::location($redirectUrl);
+            }
+
+            return redirect($redirectUrl);
         }
 
-            return redirect()->back()->withErrors(['loginError' => 'Email atau password salah']);
-            
-        }
+        return back()->withErrors([
+            'loginError' => 'Email atau password salah'
+        ]);
+    }
 
     public function logout(Request $request)
     {
